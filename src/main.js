@@ -60,7 +60,7 @@ async function getNewVideos(client, channelId, start, end) {
 }
 
 async function main() {
-  const videos = []
+  const promises = []
   
   const start = getLastChecked()
   const end = DateTime.local().toISO()
@@ -69,13 +69,15 @@ async function main() {
   const channels = await getSubscribedChannels(client)
   
   for (const { id, name } of channels) {
-    try {
-      const v = await getNewVideos(client, id, start, end)
-      videos.push(...v)
-    } catch (e) {
-      console.error(`Failed to fetch videos from ${name}`, e)
-    }
+    const promise = getNewVideos(client, id, start, end)
+      .catch(e => {
+        console.error(`Failed to fetch videos from ${name}`, e)
+        return []
+      })
+    promises.push(promise)
   }
+  const videos = (await Promise.all(promises)).flat()
+
   if (videos.length > 0) {
     await notify(videos)
   }
