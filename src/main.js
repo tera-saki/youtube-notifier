@@ -18,7 +18,7 @@ function createClient() {
   return google.youtube({ version: 'v3', auth })
 }
 
-async function getSubscribedChannelIds(client) {
+async function getSubscribedChannels(client) {
   let channels = []
   let pageToken = null
 
@@ -66,7 +66,7 @@ async function main() {
   const end = DateTime.local().toISO()
 
   const client = createClient()
-  const channels = await getSubscribedChannelIds(client)
+  const channels = await getSubscribedChannels(client)
   
   for (const { id, name } of channels) {
     try {
