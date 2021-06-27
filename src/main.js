@@ -24,7 +24,7 @@ async function getSubscribedChannels(client) {
 
   do {
     const res = await client.subscriptions.list({
-      part: ['id', 'snippet', 'contentDetails'],
+      part: ['snippet'],
       mine: true,
       maxResults: 50
     })
