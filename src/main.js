@@ -1,22 +1,9 @@
-const path = require('path')
-const fs = require('fs')
 const { DateTime } = require('luxon')
-const { google } = require('googleapis')
 
+const { createClient } = require('./client')
 const { getLastChecked, updateLastChecked } = require('./timer')
+const { validateVideo } = require('./validater')
 const { notify } = require('./notifier')
-
-const credentialsDir = path.join(__dirname, '..', 'credentials')
-
-function createClient() {
-  const credentials = JSON.parse(fs.readFileSync(path.join(credentialsDir, 'credentials.json')))
-  const token = JSON.parse(fs.readFileSync(path.join(credentialsDir, 'token.json')))
-
-  const { client_secret, client_id, redirect_uris } = credentials.installed
-  const auth = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0])
-  auth.setCredentials(token)
-  return google.youtube({ version: 'v3', auth })
-}
 
 async function getSubscribedChannels(client) {
   let channels = []
@@ -60,14 +47,13 @@ async function getNewVideos(client, channelId, start, end) {
 }
 
 async function main() {
-  const promises = []
-  
   const start = getLastChecked()
   const end = DateTime.local().toISO()
 
   const client = createClient()
   const channels = await getSubscribedChannels(client)
-  
+
+  const promises = []
   for (const { id, name } of channels) {
     const promise = getNewVideos(client, id, start, end)
       .catch(e => {
@@ -77,6 +63,7 @@ async function main() {
     promises.push(promise)
   }
   const videos = (await Promise.all(promises)).flat()
+    .filter(video => validateVideo(video))
 
   if (videos.length > 0) {
     await notify(videos)
