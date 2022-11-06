@@ -36,7 +36,7 @@ async function getNewVideos(client, channelId, start, end) {
     })
   ).data
 
-  return items.filter((item) => item.snippet.type === 'upload')
+  return items.filter((item) => item.snippet.type === 'upload' && item.snippet.channelTitle)
     .map(({ snippet, contentDetails }) => {
       return {
         title: snippet.title,
@@ -64,7 +64,6 @@ async function main() {
   }
   const videos = (await Promise.all(promises)).flat()
     .filter(video => validateVideo(video))
-
   if (videos.length > 0) {
     await notify(videos)
   }
