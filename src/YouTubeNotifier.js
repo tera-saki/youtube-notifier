@@ -50,9 +50,9 @@ class YouTubeNotifier {
     const videoURL = `https://www.youtube.com/watch?v=${video.videoId}`
     let text
     if (video.scheduledStartTime) {
-      text = `:red_circle: ${video.title} (${video.channel})\n${videoURL}\nScheduled Start Time: ${video.scheduledStartTime}`
+      text = `:microphone: ${video.title} (${video.channel})\n${videoURL}\nScheduled Start Time: ${video.scheduledStartTime}`
     } else {
-      text = `:film_frames: ${video.title} (${video.channel})\n${videoURL}\n`
+      text = `${video.title} (${video.channel})\n${videoURL}\n`
     }
     await axios.post(this.config.webhook_url, { text })
   }
