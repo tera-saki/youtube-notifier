@@ -49,10 +49,12 @@ class YouTubeNotifier {
   async notify(video) {
     const videoURL = `https://www.youtube.com/watch?v=${video.videoId}`
     let text
-    if (video.scheduledStartTime) {
-      text = `:microphone: ${video.title} (${video.channel})\n${videoURL}\nScheduled Start Time: ${video.scheduledStartTime}`
+    if (video.liveBroadcastContent == 'upcoming') {
+      text = `:alarm_clock: ${video.channel} plans to start live at ${DateTime.fromISO(video.liveStreamingDetails.scheduledStartTime).toLocaleString(DateTime.DATETIME_SHORT)}.\n${video.title}\n${videoURL}`
+    } else if (video.liveBroadcastContent == 'live') {
+      text = `:microphone: ${video.channel} is now live!\n${video.title}\n${videoURL}`
     } else {
-      text = `${video.title} (${video.channel})\n${videoURL}\n`
+      text = `:clapper: ${video.channel} uploaded a new video.\n${video.title}\n${videoURL}`
     }
     await axios.post(this.config.webhook_url, { text })
   }
@@ -62,12 +64,6 @@ class YouTubeNotifier {
     const end = DateTime.local().toISO()
 
     const channels = await this.fetcher.getSubscribedChannels()
-    const streamChannels = this.config?.stream_channels ?? []
-    for (const name of streamChannels) {
-      if (!channels.find(c => c.name === name)) {
-        throw new Error(`Stream channel "${name}" is not in the subscribed channels.`)
-      }
-    }
 
     const promises = []
     for (const { id, name } of channels) {
@@ -77,15 +73,6 @@ class YouTubeNotifier {
           return []
         })
       promises.push(promise)
-
-      if (streamChannels.includes(name)) {
-        const streamPromise = this.fetcher.getNewStreams(id, start)
-          .catch(e => {
-            console.error(`Failed to fetch streams from ${name}`, e)
-            return []
-          })
-        promises.push(streamPromise)
-      }
     }
 
     const videos = (await Promise.all(promises)).flat()
