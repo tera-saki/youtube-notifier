@@ -57,7 +57,6 @@ class YouTubeChannelFetcher {
       liveBroadcastContent: video.snippet.liveBroadcastContent,
       liveStreamingDetails: video.liveStreamingDetails
     }))
-    console.log(videos);
 
     return videos
   }
