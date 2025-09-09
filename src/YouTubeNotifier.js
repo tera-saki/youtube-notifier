@@ -49,9 +49,9 @@ class YouTubeNotifier {
   async notify(video) {
     const videoURL = `https://www.youtube.com/watch?v=${video.videoId}`
     let text
-    if (video.liveBroadcastContent == 'upcoming') {
+    if (video.liveBroadcastContent === 'upcoming') {
       text = `:alarm_clock: ${video.channel} plans to start live at ${DateTime.fromISO(video.liveStreamingDetails.scheduledStartTime).toLocaleString(DateTime.DATETIME_SHORT)}.\n${video.title}\n${videoURL}`
-    } else if (video.liveBroadcastContent == 'live') {
+    } else if (video.liveBroadcastContent === 'live') {
       text = `:microphone: ${video.channel} is now live!\n${video.title}\n${videoURL}`
     } else {
       text = `:clapper: ${video.channel} uploaded a new video.\n${video.title}\n${videoURL}`
