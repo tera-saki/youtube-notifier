@@ -53,6 +53,8 @@ class YouTubeNotifier {
       text = `:alarm_clock: ${video.channel} plans to start live at ${DateTime.fromISO(video.liveStreamingDetails.scheduledStartTime).toLocaleString(DateTime.DATETIME_SHORT)}.\n${video.title}\n${videoURL}`
     } else if (video.liveBroadcastContent === 'live') {
       text = `:microphone: ${video.channel} is now live!\n${video.title}\n${videoURL}`
+    } else if (video.liveStreamingDetails?.actualEndTime) {
+      return; // Do not notify ended live streams
     } else {
       text = `:clapper: ${video.channel} uploaded a new video.\n${video.title}\n${videoURL}`
     }
