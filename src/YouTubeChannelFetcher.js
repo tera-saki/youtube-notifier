@@ -1,7 +1,3 @@
-const axios = require('axios')
-const { DateTime } = require('luxon')
-const xml2js = require('xml2js')
-
 const YouTubeClient = require('./YouTubeClient')
 
 class YouTubeChannelFetcher {
