@@ -40,6 +40,10 @@ class YouTubeChannelFetcher {
       .filter((item) => item.snippet.type === 'upload')
       .map((item) => item.contentDetails.upload.videoId)
 
+    if (videoIds.length === 0) {
+      return []
+    }
+
     const videoListResponses = await this.client.videos.list({
       part: ['snippet', 'liveStreamingDetails'],
       id: videoIds.join(',')
