@@ -50,7 +50,8 @@ class YouTubeNotifier {
     const videoURL = `https://www.youtube.com/watch?v=${video.videoId}`
     let text
     if (video.liveBroadcastContent === 'upcoming') {
-      text = `:alarm_clock: ${video.channel} plans to start live at ${DateTime.fromISO(video.liveStreamingDetails.scheduledStartTime).toLocaleString(DateTime.DATETIME_SHORT)}.\n${video.title}\n${videoURL}`
+      const localeString = DateTime.fromISO(video.liveStreamingDetails.scheduledStartTime).toLocaleString(DateTime.DATETIME_SHORT)
+      text = `:alarm_clock: ${video.channel} plans to start live at ${localeString}.\n${video.title}\n${videoURL}`
     } else if (video.liveBroadcastContent === 'live') {
       text = `:microphone: ${video.channel} is now live!\n${video.title}\n${videoURL}`
     } else if (video.liveStreamingDetails?.actualEndTime) {
