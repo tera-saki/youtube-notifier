@@ -12,7 +12,7 @@ class YouTubeNotifier {
     const configPath = path.join(rootDir, 'config.json')
     const credentialPath = path.join(rootDir, 'credentials', 'credentials.json')
     const tokenPath = path.join(rootDir, 'credentials', 'token.json')
-    const lastCheckedFilePath = path.join(rootDir, 'last_checked')
+    const statusFilePath = path.join(rootDir, 'channel_status.json')
 
     if (!fs.existsSync(credentialPath)) {
       throw new Error(`Credential file not found: ${credentialPath}`)
@@ -24,21 +24,28 @@ class YouTubeNotifier {
       throw new Error(`Config file not found: ${configPath}`)
     }
 
-    this.fetcher = new YouTubeChannelFetcher({ credentialPath, tokenPath })
-    this.config = JSON.parse(fs.readFileSync(configPath, { encoding: 'utf-8' }))
-    this.lastCheckedFilePath = lastCheckedFilePath
-  }
-
-  getLastChecked() {
-    if (!fs.existsSync(this.lastCheckedFilePath)) {
-      return DateTime.local().startOf('day').toISO()
+    if (!fs.existsSync(statusFilePath)) {
+      fs.writeFileSync(statusFilePath, '{}', { encoding: 'utf-8' })
     }
 
-    return fs.readFileSync(this.lastCheckedFilePath, { encoding: 'utf8' }).trim()
+    this.fetcher = new YouTubeChannelFetcher({ credentialPath, tokenPath })
+    this.config = JSON.parse(fs.readFileSync(configPath, { encoding: 'utf-8' }))
+    this.statusFilePath = statusFilePath
   }
 
-  updateLastChecked(t) {
-    fs.writeFileSync(this.lastCheckedFilePath, t)
+  getChannelStatus() {
+    return JSON.parse(fs.readFileSync(this.statusFilePath, { encoding: 'utf-8' }))
+  }
+
+  updateChannelStatus(updated) {
+    const status = this.getChannelStatus()
+    for (const [k, v] of Object.entries(updated)) {
+      if (!status[k]) {
+        status[k] = {}
+      }
+      status[k] = { ...status[k], ...v }
+    }
+    fs.writeFileSync(this.statusFilePath, JSON.stringify(status, null, 2), { encoding: 'utf-8' })
   }
 
   validateVideo(video) {
@@ -51,26 +58,25 @@ class YouTubeNotifier {
     let text
     if (video.liveBroadcastContent === 'upcoming') {
       const localeString = DateTime.fromISO(video.liveStreamingDetails.scheduledStartTime).toLocaleString(DateTime.DATETIME_SHORT)
-      text = `:alarm_clock: ${video.channel} plans to start live at ${localeString}.\n${video.title}\n${videoURL}`
+      text = `:alarm_clock: ${video.channelTitle} plans to start live at ${localeString}.\n${video.title}\n${videoURL}`
     } else if (video.liveBroadcastContent === 'live') {
-      text = `:microphone: ${video.channel} is now live!\n${video.title}\n${videoURL}`
+      text = `:microphone: ${video.channelTitle} is now live!\n${video.title}\n${videoURL}`
     } else if (video.liveStreamingDetails?.actualEndTime) {
       return; // Do not notify ended live streams
     } else {
-      text = `:clapper: ${video.channel} uploaded a new video.\n${video.title}\n${videoURL}`
+      text = `:clapper: ${video.channelTitle} uploaded a new video.\n${video.title}\n${videoURL}`
     }
     await axios.post(this.config.webhook_url, { text })
   }
 
   async run() {
-    const start = this.getLastChecked()
-    const end = DateTime.local().toISO()
-
     const channels = await this.fetcher.getSubscribedChannels()
+    const channelStatus = this.getChannelStatus()
 
     const promises = []
     for (const { id, name } of channels) {
-      const promise = this.fetcher.getNewVideos(id, start, end)
+      const start = channelStatus[id]?.last_published_at ?? DateTime.now().minus({ days: 1 }).toISO()
+      const promise = this.fetcher.getNewVideos(id, start)
         .catch(e => {
           console.error(`Failed to fetch videos from ${name}`, e)
           return []
@@ -79,13 +85,19 @@ class YouTubeNotifier {
     }
 
     const videos = (await Promise.all(promises)).flat()
+    const updated = {}
+    console.log(videos);
     for (const video of videos) {
-      if (!this.validateVideo(video)) {
-        continue
+      if (this.validateVideo(video)) {
+        await this.notify(video)
       }
-      await this.notify(video)
+      // update last_published_at even if the video is excluded not to call videos.list API again
+      updated[video.channelId] = { last_published_at: video.publishedAt }
     }
-    this.updateLastChecked(end)
+    console.log(updated);
+    if (Object.keys(updated).length > 0) {
+      this.updateChannelStatus(updated)
+    }
   }
 }
 

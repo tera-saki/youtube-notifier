@@ -26,13 +26,12 @@ class YouTubeChannelFetcher {
     }));
   }
 
-  // Get new videos from a channel between 'from' and 'to' timestamps
-  async getNewVideos(channelId, from, to) {
+  // Get new videos from a channel since a given time
+  async getNewVideos(channelId, from) {
     const activityResponses = await this.client.activities.list({
       part: ['snippet', 'contentDetails'],
       channelId,
       publishedAfter: from,
-      publishedBefore: to,
       maxResults: 10
     })
 
@@ -52,7 +51,8 @@ class YouTubeChannelFetcher {
     const videos = videoListResponses.data.items.map(video => ({
       videoId: video.id,
       title: video.snippet.title,
-      channel: video.snippet.channelTitle,
+      channelId: video.snippet.channelId,
+      channelTitle: video.snippet.channelTitle,
       publishedAt: video.snippet.publishedAt,
       liveBroadcastContent: video.snippet.liveBroadcastContent,
       liveStreamingDetails: video.liveStreamingDetails
