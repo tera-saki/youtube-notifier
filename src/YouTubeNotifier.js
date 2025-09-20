@@ -75,7 +75,12 @@ class YouTubeNotifier {
 
     const promises = []
     for (const { id, name } of channels) {
-      const start = channelStatus[id]?.last_published_at ?? DateTime.now().minus({ days: 1 }).toISO()
+      let start
+      if (channelStatus[id]?.last_published_at) {
+        start = DateTime.fromISO(channelStatus[id].last_published_at).plus({ seconds: 1 }).toISO()
+      } else {
+        start = DateTime.now().minus({ days: 1 }).toISO()
+      }
       const promise = this.fetcher.getNewVideos(id, start)
         .catch(e => {
           console.error(`Failed to fetch videos from ${name}`, e)
