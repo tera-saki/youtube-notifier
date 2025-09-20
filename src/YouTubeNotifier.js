@@ -86,7 +86,6 @@ class YouTubeNotifier {
 
     const videos = (await Promise.all(promises)).flat()
     const updated = {}
-    console.log(videos);
     for (const video of videos) {
       if (this.validateVideo(video)) {
         await this.notify(video)
@@ -94,7 +93,6 @@ class YouTubeNotifier {
       // update last_published_at even if the video is excluded not to call videos.list API again
       updated[video.channelId] = { last_published_at: video.publishedAt }
     }
-    console.log(updated);
     if (Object.keys(updated).length > 0) {
       this.updateChannelStatus(updated)
     }
